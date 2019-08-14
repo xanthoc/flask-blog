@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, session, flash, redirect, url_for, g
 import sqlite3
+from functools import wraps
 
 DATABASE = "blog.db"
 USERNAME = 'admin'
@@ -26,11 +27,24 @@ def login():
 			session['logged_in'] = True
 			return redirect(url_for('main'))
 	return render_template('login.html', error=error), status_code
-	return render_template('login.html')
+
+def login_required(test):
+	@wraps(test)
+	def wrap(*args, **kwargs):
+		if 'logged_in' in session:
+			return test(*args, **kwargs)
+		else:
+			flash("로그인부터 해야지!")
+			return redirect(url_for('login'))
+	return wrap
 
 @app.route('/main')
+@login_required
 def main():
-	return render_template('main.html')
+	g.db = connect_db()
+	cur = g.db.execute('SELECT * FROM posts')
+	posts = [ dict(title=row[0], post=row[1]) for row in cur.fetchall() ]
+	return render_template('main.html', posts=posts)
 
 @app.route('/logout')
 def logout():
