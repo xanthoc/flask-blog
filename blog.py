@@ -52,5 +52,21 @@ def logout():
 	flash('You were logged out')
 	return redirect(url_for('login'))
 
+@app.route('/add', methods=['POST'])
+@login_required
+def add():
+	title = request.form['title']
+	post = request.form['post']
+	if title and post:
+		g.db = connect_db()
+		g.db.execute("INSERT INTO posts VALUES(?, ?)", (title, post))
+		g.db.commit()
+		g.db.close()
+		flash('New entry was successfully posted!')
+	else:
+		flash('All fields are required! Try again.')
+	return redirect(url_for('main'))
+
+
 if __name__ == '__main__':
 	app.run(debug=True)
